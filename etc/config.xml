@@ -8,12 +8,6 @@
             </general>
             <product>
                 <enabled>1</enabled>
-                <!--
-                    include_aggregate_rating:
-                    Adds AggregateRating to Product schema from Magento review data.
-                    Requires at least one approved review per product.
-                    Highly recommended — AI engines use this for trust signals.
-                -->
                 <include_aggregate_rating>1</include_aggregate_rating>
                 <include_breadcrumb>1</include_breadcrumb>
                 <include_sku>1</include_sku>

@@ -1,9 +1,16 @@
 <?xml version="1.0"?>
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
       xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
-    <head>
-        <block class="Magento\Framework\View\Element\Template"
-               name="angeo.rich.data.head"
-               template="Angeo_RichData::head_scripts.phtml"/>
-    </head>
+    <body>
+        <referenceBlock name="head.additional">
+            <block class="Magento\Framework\View\Element\Template"
+                   name="angeo.rich.data.head"
+                   template="Angeo_RichData::head_scripts.phtml">
+                <arguments>
+                    <argument name="view_model"
+                              xsi:type="object">Angeo\RichData\ViewModel\JsonLd</argument>
+                </arguments>
+            </block>
+        </referenceBlock>
+    </body>
 </page>

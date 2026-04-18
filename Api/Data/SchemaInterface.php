@@ -14,7 +14,7 @@ use Magento\Store\Api\Data\StoreInterface;
  *
  * Register via di.xml to add custom schema types:
  *
- *   <type name="Angeo\RichData\Model\JsonLd\Renderer\HeadRenderer">
+ *   <type name="Angeo\RichData\Model\JsonLd\Renderer\SchemaRenderer">
  *     <arguments><argument name="builders" xsi:type="array">
  *       <item name="my_schema" xsi:type="object">Vendor\Module\Model\JsonLd\Builder\MySchemaBuilder</item>
  *     </argument></arguments>
