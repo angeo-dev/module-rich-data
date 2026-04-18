@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+
+    <!-- ══════════════════════════════════════════
+         Schema builders injected into SchemaRenderer.
+         Order = injection order into <head>.
+         Add custom builders here without changing any existing code.
+    ══════════════════════════════════════════════ -->
+    <type name="Angeo\RichData\Model\JsonLd\Renderer\SchemaRenderer">
+        <arguments>
+            <argument name="builders" xsi:type="array">
+                <item name="organization" xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\OrganizationBuilder</item>
+                <item name="website"      xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\WebSiteBuilder</item>
+                <item name="product"      xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\ProductBuilder</item>
+                <item name="breadcrumb"   xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\BreadcrumbBuilder</item>
+                <item name="faq"          xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\FaqBuilder</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!-- ══════════════════════════════════════════
+         CLI command
+    ══════════════════════════════════════════════ -->
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="angeo_rich_data_validate" xsi:type="object">
+                    Angeo\RichData\Console\Command\ValidateCommand
+                </item>
+            </argument>
+        </arguments>
+    </type>
+
+</config>

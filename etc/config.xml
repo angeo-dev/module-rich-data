@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <angeo_rich_data>
+            <general>
+                <enabled>1</enabled>
+            </general>
+            <product>
+                <enabled>1</enabled>
+                <!--
+                    include_aggregate_rating:
+                    Adds AggregateRating to Product schema from Magento review data.
+                    Requires at least one approved review per product.
+                    Highly recommended — AI engines use this for trust signals.
+                -->
+                <include_aggregate_rating>1</include_aggregate_rating>
+                <include_breadcrumb>1</include_breadcrumb>
+                <include_sku>1</include_sku>
+                <include_brand>0</include_brand>
+                <brand_attribute>manufacturer</brand_attribute>
+                <availability_in_stock>https://schema.org/InStock</availability_in_stock>
+                <availability_out_of_stock>https://schema.org/OutOfStock</availability_out_of_stock>
+                <condition>NewCondition</condition>
+            </product>
+            <organization>
+                <enabled>1</enabled>
+                <name></name>
+                <logo></logo>
+                <same_as></same_as>
+                <contact_type>customer service</contact_type>
+                <contact_telephone></contact_telephone>
+            </organization>
+            <website>
+                <enabled>1</enabled>
+                <include_searchaction>1</include_searchaction>
+            </website>
+            <faq>
+                <enabled>1</enabled>
+            </faq>
+        </angeo_rich_data>
+    </default>
+</config>

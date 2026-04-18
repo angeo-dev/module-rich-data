@@ -1,0 +1,6 @@
+<?php
+/** @var \Magento\Framework\View\Element\Template $block */
+$scripts = $block->getData('rich_data_scripts');
+if ($scripts): ?>
+<?= /* @noEscape */ $scripts ?>
+<?php endif; ?>

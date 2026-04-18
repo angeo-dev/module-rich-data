@@ -1,0 +1,160 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="angeo" translate="label" sortOrder="500">
+            <label>Angeo</label>
+        </tab>
+
+        <section id="angeo_rich_data"
+                 translate="label"
+                 sortOrder="200"
+                 showInDefault="1"
+                 showInWebsite="1"
+                 showInStore="1">
+            <label>Rich Data (JSON-LD)</label>
+            <tab>angeo</tab>
+            <resource>Angeo_RichData::config</resource>
+
+            <!-- ── General ──────────────────────────────────────────── -->
+            <group id="general" translate="label" sortOrder="10"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>General</label>
+                <field id="enabled" type="select" translate="label" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+
+            <!-- ── Product ──────────────────────────────────────────── -->
+            <group id="product" translate="label" sortOrder="20"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Product schema</label>
+                <comment>Injects @type:Product JSON-LD on all product pages. Fixes "Product schema" signal in AEO Audit.</comment>
+
+                <field id="enabled" type="select" translate="label" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="include_aggregate_rating" type="select" translate="label comment" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include AggregateRating</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Adds review rating to Product schema when reviews exist. Recommended — AI engines use this for trust signals.</comment>
+                </field>
+
+                <field id="include_breadcrumb" type="select" translate="label" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include BreadcrumbList</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="include_sku" type="select" translate="label" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include SKU</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="include_brand" type="select" translate="label comment" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include Brand</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Reads brand from a product attribute. Configure which attribute below.</comment>
+                </field>
+
+                <field id="brand_attribute" type="text" translate="label comment" sortOrder="60"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Brand attribute code</label>
+                    <comment>Product attribute code to use as brand. Default: manufacturer</comment>
+                    <depends><field id="include_brand">1</field></depends>
+                </field>
+
+                <field id="condition" type="select" translate="label comment" sortOrder="70"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Item condition</label>
+                    <source_model>Angeo\RichData\Model\Config\Source\ItemCondition</source_model>
+                    <comment>Applied to all products. Use NewCondition for new stock.</comment>
+                </field>
+            </group>
+
+            <!-- ── Organization ─────────────────────────────────────── -->
+            <group id="organization" translate="label" sortOrder="30"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Organization schema</label>
+                <comment>Injected on every page. Tells AI crawlers who runs the store — improves brand citation.</comment>
+
+                <field id="enabled" type="select" translate="label" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="name" type="text" translate="label comment" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Organization name</label>
+                    <comment>Leave empty to use Magento store name.</comment>
+                </field>
+
+                <field id="logo" type="text" translate="label comment" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Logo URL</label>
+                    <comment>Full URL to logo image. Recommended: 512×512px PNG.</comment>
+                </field>
+
+                <field id="same_as" type="textarea" translate="label comment" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>sameAs URLs</label>
+                    <comment>Comma-separated social profile URLs (LinkedIn, Facebook, Twitter, etc.).</comment>
+                </field>
+
+                <field id="contact_telephone" type="text" translate="label" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Contact telephone</label>
+                </field>
+
+                <field id="contact_type" type="text" translate="label comment" sortOrder="60"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Contact type</label>
+                    <comment>E.g. customer service, technical support, sales. Default: customer service</comment>
+                </field>
+            </group>
+
+            <!-- ── WebSite ───────────────────────────────────────────── -->
+            <group id="website" translate="label" sortOrder="40"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>WebSite schema</label>
+                <comment>Injected on homepage only. Enables Sitelinks Searchbox in Google/AI results.</comment>
+
+                <field id="enabled" type="select" translate="label" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="include_searchaction" type="select" translate="label comment" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include SearchAction (Sitelinks Searchbox)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Adds potentialAction/SearchAction pointing to Magento catalog search.</comment>
+                </field>
+            </group>
+
+            <!-- ── FAQ ──────────────────────────────────────────────── -->
+            <group id="faq" translate="label" sortOrder="50"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>FAQPage schema</label>
+                <comment>Auto-detected from CMS pages with FAQ content. Fixes "FAQPage schema" signal in AEO Audit.</comment>
+
+                <field id="enabled" type="select" translate="label" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+
+        </section>
+    </system>
+</config>
