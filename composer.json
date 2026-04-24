@@ -2,7 +2,7 @@
     "name": "angeo/module-rich-data",
     "description": "Magento 2 JSON-LD Rich Data for AI Engine Optimization. Injects spec-compliant Product, Organization, BreadcrumbList, FAQPage, and WebSite schema. Fixes the 'Product schema \u2014 JSON-LD structured data' signal in angeo/module-aeo-audit.",
     "type": "magento2-module",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "license": "MIT",
     "authors": [
         {
@@ -48,13 +48,5 @@
         "psr-4": {
             "Angeo\\RichData\\Test\\": "Test/"
         }
-    },
-    "extra": {
-        "map": [
-            [
-                "*",
-                "Angeo/RichData"
-            ]
-        ]
     }
 }
