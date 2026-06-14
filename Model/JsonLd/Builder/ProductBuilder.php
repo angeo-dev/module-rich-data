@@ -16,18 +16,20 @@ use Magento\Store\Api\Data\StoreInterface;
 /**
  * Builds Product JSON-LD schema.
  *
- * Fixes the ProductSchemaChecker FAIL/WARN signal in angeo/module-aeo-audit:
- *   ✓ @type: Product
- *   ✓ name, description, image, url, sku
- *   ✓ offers.price, offers.priceCurrency, offers.availability ← critical for ChatGPT Shopping
- *   ✓ offers.url (seller page)
- *   ✓ aggregateRating (when reviews exist)
- *   ✓ brand (configurable, off by default)
- *   ✓ BreadcrumbList (injected as separate schema in same output)
+ * Fixes the ProductSchemaChecker and "Merchant policies" signals in
+ * angeo/module-aeo-audit:
+ *   - @type: Product
+ *   - name, description, image, url, sku
+ *   - offers.price, offers.priceCurrency, offers.availability  (critical for ChatGPT Shopping)
+ *   - offers.url (seller page)
+ *   - offers.hasMerchantReturnPolicy  (required by Google & ChatGPT Shopping since Jan 2026)
+ *   - offers.shippingDetails          (required for full structured-data eligibility)
+ *   - aggregateRating (when reviews exist)
+ *   - gtin / mpn (optional, improves product matching)
+ *   - brand (configurable, off by default)
  *
  * Context keys:
- *   'product' => ProductInterface   — required
- *   'category_path' => array        — optional, for BreadcrumbList
+ *   'product' => ProductInterface   - required
  */
 class ProductBuilder extends AbstractBuilder
 {
@@ -62,8 +64,8 @@ class ProductBuilder extends AbstractBuilder
         $isInStock     = $this->getStockStatus($product, $storeId);
 
         $availability = $isInStock
-            ? $this->getConfig('angeo_rich_data/product/availability_in_stock', $store)
-            : $this->getConfig('angeo_rich_data/product/availability_out_of_stock', $store);
+            ? ($this->getConfig('angeo_rich_data/product/availability_in_stock', $store) ?: 'https://schema.org/InStock')
+            : ($this->getConfig('angeo_rich_data/product/availability_out_of_stock', $store) ?: 'https://schema.org/OutOfStock');
 
         $schema = [
             '@context' => 'https://schema.org',
@@ -72,7 +74,7 @@ class ProductBuilder extends AbstractBuilder
             'url'      => $product->getProductUrl(),
         ];
 
-        // Description — use short_description first, fall back to description
+        // Description - use short_description first, fall back to description
         $desc = strip_tags((string) ($product->getShortDescription() ?: $product->getDescription()));
         $desc = trim(preg_replace('/\s+/', ' ', $desc));
         if ($desc) {
@@ -90,6 +92,11 @@ class ProductBuilder extends AbstractBuilder
             $schema['sku'] = $product->getSku();
         }
 
+        // GTIN / MPN - optional identifiers that improve AI/Google matching
+        if ($this->isConfigEnabled('angeo_rich_data/product/include_identifiers', $store)) {
+            $this->addProductIdentifiers($schema, $product, $store);
+        }
+
         // Brand
         if ($this->isConfigEnabled('angeo_rich_data/product/include_brand', $store)) {
             $brandAttr = $this->getConfig('angeo_rich_data/product/brand_attribute', $store) ?: 'manufacturer';
@@ -99,7 +106,7 @@ class ProductBuilder extends AbstractBuilder
             }
         }
 
-        // Offers — the most critical part for ChatGPT Shopping
+        // Offers - the most critical part for ChatGPT Shopping
         $schema['offers'] = [
             '@type'         => 'Offer',
             'price'         => number_format($price, 2, '.', ''),
@@ -113,7 +120,25 @@ class ProductBuilder extends AbstractBuilder
             ],
         ];
 
-        // AggregateRating — requires at least one approved review
+        // Condition
+        $condition = $this->getConfig('angeo_rich_data/product/condition', $store);
+        if ($condition) {
+            $schema['offers']['itemCondition'] = 'https://schema.org/' . $condition;
+        }
+
+        // Merchant return policy - required by Google & ChatGPT Shopping since Jan 2026
+        $returnPolicy = $this->buildReturnPolicy($store);
+        if ($returnPolicy !== null) {
+            $schema['offers']['hasMerchantReturnPolicy'] = $returnPolicy;
+        }
+
+        // Shipping details - required for full structured-data eligibility
+        $shippingDetails = $this->buildShippingDetails($store, $currencyCode);
+        if ($shippingDetails !== null) {
+            $schema['offers']['shippingDetails'] = $shippingDetails;
+        }
+
+        // AggregateRating - requires at least one approved review
         if ($this->isConfigEnabled('angeo_rich_data/product/include_aggregate_rating', $store)) {
             $rating = $this->buildAggregateRating($product, $storeId);
             if ($rating !== null) {
@@ -121,13 +146,118 @@ class ProductBuilder extends AbstractBuilder
             }
         }
 
-        // Condition
-        $condition = $this->getConfig('angeo_rich_data/product/condition', $store);
-        if ($condition) {
-            $schema['offers']['itemCondition'] = 'https://schema.org/' . $condition;
+        return $schema;
+    }
+
+    /**
+     * Add GTIN / MPN identifiers from configured product attributes.
+     */
+    private function addProductIdentifiers(array &$schema, Product $product, StoreInterface $store): void
+    {
+        $gtinAttr = $this->getConfig('angeo_rich_data/product/gtin_attribute', $store);
+        if ($gtinAttr) {
+            $gtin = trim((string) $product->getData($gtinAttr));
+            if ($gtin !== '') {
+                $schema['gtin'] = $gtin;
+            }
         }
 
-        return $schema;
+        $mpnAttr = $this->getConfig('angeo_rich_data/product/mpn_attribute', $store);
+        if ($mpnAttr) {
+            $mpn = trim((string) $product->getData($mpnAttr));
+            if ($mpn !== '') {
+                $schema['mpn'] = $mpn;
+            }
+        }
+    }
+
+    /**
+     * Build MerchantReturnPolicy from store config.
+     * Returns null when the feature is disabled.
+     */
+    private function buildReturnPolicy(StoreInterface $store): ?array
+    {
+        if (!$this->isConfigEnabled('angeo_rich_data/merchant_policies/return_enabled', $store)) {
+            return null;
+        }
+
+        $days = (int) $this->getConfig('angeo_rich_data/merchant_policies/return_days', $store);
+        $countryRaw = $this->getConfig('angeo_rich_data/merchant_policies/return_country', $store);
+        $countries = array_values(array_filter(array_map('trim', explode(',', $countryRaw))));
+
+        $policy = [
+            '@type'                => 'MerchantReturnPolicy',
+            'applicableCountry'    => count($countries) > 1 ? $countries : ($countries[0] ?? 'US'),
+            'returnPolicyCategory' => $days > 0
+                ? 'https://schema.org/MerchantReturnFiniteReturnWindow'
+                : 'https://schema.org/MerchantReturnNotPermitted',
+        ];
+
+        if ($days > 0) {
+            $policy['merchantReturnDays'] = $days;
+            $policy['returnMethod']       = 'https://schema.org/ReturnByMail';
+
+            $feeType = $this->getConfig('angeo_rich_data/merchant_policies/return_fee', $store) ?: 'FreeReturn';
+            $policy['returnFees'] = 'https://schema.org/' . $feeType;
+        }
+
+        return $policy;
+    }
+
+    /**
+     * Build OfferShippingDetails from store config.
+     * Returns null when the feature is disabled.
+     */
+    private function buildShippingDetails(StoreInterface $store, string $currencyCode): ?array
+    {
+        if (!$this->isConfigEnabled('angeo_rich_data/merchant_policies/shipping_enabled', $store)) {
+            return null;
+        }
+
+        $rate = $this->getConfig('angeo_rich_data/merchant_policies/shipping_rate', $store);
+        $rate = $rate === '' ? '0.00' : number_format((float) $rate, 2, '.', '');
+
+        $countryRaw = $this->getConfig('angeo_rich_data/merchant_policies/shipping_country', $store);
+        $countries  = array_values(array_filter(array_map('trim', explode(',', $countryRaw))));
+        $shipCountry = count($countries) > 1 ? $countries : ($countries[0] ?? 'US');
+
+        $details = [
+            '@type'            => 'OfferShippingDetails',
+            'shippingRate'     => [
+                '@type'         => 'MonetaryAmount',
+                'value'         => $rate,
+                'currency'      => $currencyCode,
+            ],
+            'shippingDestination' => [
+                '@type'          => 'DefinedRegion',
+                'addressCountry' => $shipCountry,
+            ],
+        ];
+
+        $handlingMin = $this->getConfig('angeo_rich_data/merchant_policies/handling_days_min', $store);
+        $handlingMax = $this->getConfig('angeo_rich_data/merchant_policies/handling_days_max', $store);
+        $transitMin  = $this->getConfig('angeo_rich_data/merchant_policies/transit_days_min', $store);
+        $transitMax  = $this->getConfig('angeo_rich_data/merchant_policies/transit_days_max', $store);
+
+        if ($handlingMin !== '' || $handlingMax !== '' || $transitMin !== '' || $transitMax !== '') {
+            $details['deliveryTime'] = [
+                '@type'        => 'ShippingDeliveryTime',
+                'handlingTime' => [
+                    '@type'    => 'QuantitativeValue',
+                    'minValue' => (int) ($handlingMin !== '' ? $handlingMin : 0),
+                    'maxValue' => (int) ($handlingMax !== '' ? $handlingMax : 1),
+                    'unitCode' => 'DAY',
+                ],
+                'transitTime'  => [
+                    '@type'    => 'QuantitativeValue',
+                    'minValue' => (int) ($transitMin !== '' ? $transitMin : 1),
+                    'maxValue' => (int) ($transitMax !== '' ? $transitMax : 5),
+                    'unitCode' => 'DAY',
+                ],
+            ];
+        }
+
+        return $details;
     }
 
     private function getStockStatus(Product $product, int $storeId): bool
@@ -167,7 +297,7 @@ class ProductBuilder extends AbstractBuilder
                 return null;
             }
 
-            $ratingValue = round((float) $ratingSummary->getRatingSummary() / 20, 1); // convert 0–100 to 0–5
+            $ratingValue = round((float) $ratingSummary->getRatingSummary() / 20, 1); // 0-100 to 0-5
 
             return [
                 '@type'       => 'AggregateRating',

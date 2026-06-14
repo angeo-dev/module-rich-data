@@ -78,6 +78,119 @@
                     <source_model>Angeo\RichData\Model\Config\Source\ItemCondition</source_model>
                     <comment>Applied to all products. Use NewCondition for new stock.</comment>
                 </field>
+
+                <field id="include_identifiers" type="select" translate="label comment" sortOrder="80"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include GTIN / MPN identifiers</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Adds gtin and/or mpn from product attributes. Improves AI/Google product matching.</comment>
+                </field>
+
+                <field id="gtin_attribute" type="text" translate="label comment" sortOrder="90"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>GTIN attribute code</label>
+                    <comment>Product attribute holding GTIN/EAN/UPC. Leave empty to skip.</comment>
+                    <depends><field id="include_identifiers">1</field></depends>
+                </field>
+
+                <field id="mpn_attribute" type="text" translate="label comment" sortOrder="100"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>MPN attribute code</label>
+                    <comment>Product attribute holding the manufacturer part number. Leave empty to skip.</comment>
+                    <depends><field id="include_identifiers">1</field></depends>
+                </field>
+
+                <field id="availability_in_stock" type="text" translate="label comment" sortOrder="110"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>In-stock availability URL</label>
+                    <comment>schema.org availability for in-stock products. Default: https://schema.org/InStock</comment>
+                </field>
+
+                <field id="availability_out_of_stock" type="text" translate="label comment" sortOrder="120"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Out-of-stock availability URL</label>
+                    <comment>schema.org availability for out-of-stock products. Default: https://schema.org/OutOfStock</comment>
+                </field>
+            </group>
+
+            <!-- ── Merchant policies ────────────────────────────────── -->
+            <group id="merchant_policies" translate="label" sortOrder="25"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Merchant policies (return &amp; shipping)</label>
+                <comment>Injects offers.hasMerchantReturnPolicy and offers.shippingDetails. Required by Google &amp; ChatGPT Shopping since Jan 2026. Fixes the "Merchant policies" signal in AEO Audit.</comment>
+
+                <field id="return_enabled" type="select" translate="label" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable return policy</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="return_days" type="text" translate="label comment" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Return window (days)</label>
+                    <comment>Number of days a customer has to return an item. 0 = returns not permitted.</comment>
+                    <depends><field id="return_enabled">1</field></depends>
+                </field>
+
+                <field id="return_country" type="text" translate="label comment" sortOrder="30"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Applicable country</label>
+                    <comment>ISO country code(s), comma-separated (e.g. US or US,CA,GB). Default: US</comment>
+                    <depends><field id="return_enabled">1</field></depends>
+                </field>
+
+                <field id="return_fee" type="select" translate="label comment" sortOrder="40"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Return fee</label>
+                    <source_model>Angeo\RichData\Model\Config\Source\ReturnFee</source_model>
+                    <comment>Whether the customer pays to return an item.</comment>
+                    <depends><field id="return_enabled">1</field></depends>
+                </field>
+
+                <field id="shipping_enabled" type="select" translate="label" sortOrder="50"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enable shipping details</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="shipping_rate" type="text" translate="label comment" sortOrder="60"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Flat shipping rate</label>
+                    <comment>Shipping cost in store currency. Use 0 for free shipping.</comment>
+                    <depends><field id="shipping_enabled">1</field></depends>
+                </field>
+
+                <field id="shipping_country" type="text" translate="label comment" sortOrder="70"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Shipping destination country</label>
+                    <comment>ISO country code(s), comma-separated. Default: US</comment>
+                    <depends><field id="shipping_enabled">1</field></depends>
+                </field>
+
+                <field id="handling_days_min" type="text" translate="label comment" sortOrder="80"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Handling time — min days</label>
+                    <comment>Business days to prepare an order before dispatch. Leave all 4 time fields empty to omit deliveryTime.</comment>
+                    <depends><field id="shipping_enabled">1</field></depends>
+                </field>
+
+                <field id="handling_days_max" type="text" translate="label" sortOrder="90"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Handling time — max days</label>
+                    <depends><field id="shipping_enabled">1</field></depends>
+                </field>
+
+                <field id="transit_days_min" type="text" translate="label" sortOrder="100"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Transit time — min days</label>
+                    <depends><field id="shipping_enabled">1</field></depends>
+                </field>
+
+                <field id="transit_days_max" type="text" translate="label" sortOrder="110"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Transit time — max days</label>
+                    <depends><field id="shipping_enabled">1</field></depends>
+                </field>
             </group>
 
             <!-- ── Organization ─────────────────────────────────────── -->
@@ -96,6 +209,12 @@
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Organization name</label>
                     <comment>Leave empty to use Magento store name.</comment>
+                </field>
+
+                <field id="description" type="textarea" translate="label comment" sortOrder="25"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Organization description</label>
+                    <comment>1–2 sentences describing the brand. Used as the Organization "description" in JSON-LD — AI engines read it as the brand entity summary.</comment>
                 </field>
 
                 <field id="logo" type="text" translate="label comment" sortOrder="30"
@@ -139,6 +258,19 @@
                     <label>Include SearchAction (Sitelinks Searchbox)</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>Adds potentialAction/SearchAction pointing to Magento catalog search.</comment>
+                </field>
+            </group>
+
+            <!-- ── Collection Page (category) ───────────────────────── -->
+            <group id="collection_page" translate="label" sortOrder="45"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>CollectionPage schema (categories)</label>
+                <comment>Injected on category pages. Emits CollectionPage + ItemList of the category's products — read by the Gemini Shopping Graph.</comment>
+
+                <field id="enabled" type="select" translate="label" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
             </group>
 

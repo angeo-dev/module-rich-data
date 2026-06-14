@@ -14,7 +14,9 @@
 |-----------------|--------|-------|
 | Product schema — JSON-LD structured data | FAIL / WARN | PASS |
 | FAQPage schema — AI answer eligibility | WARN | PASS (on FAQ CMS pages) |
+| Merchant policies — return & shipping schema | FAIL | PASS (when enabled & configured) |
 | Product schema — AggregateRating | WARN | PASS (when reviews exist) |
+| JSON-LD quality — BreadcrumbList | WARN | PASS (now rendered on product pages) |
 
 ---
 
@@ -22,7 +24,7 @@
 
 | Schema | Pages | Key fields |
 |--------|-------|------------|
-| `Product` | All product pages | name, description, image, sku, offers.price, offers.priceCurrency, offers.availability, aggregateRating |
+| `Product` | All product pages | name, description, image, sku, gtin/mpn, offers.price, offers.priceCurrency, offers.availability, offers.hasMerchantReturnPolicy, offers.shippingDetails, aggregateRating |
 | `Organization` | All pages | name, url, logo, sameAs, contactPoint |
 | `WebSite` | Homepage only | name, url, potentialAction/SearchAction |
 | `BreadcrumbList` | Product pages | category path |
@@ -50,7 +52,14 @@ bin/magento cache:flush
 - Include BreadcrumbList
 - Include SKU
 - Include Brand (configurable attribute)
+- Include GTIN / MPN (configurable attributes)
 - Item condition (New/Used/Refurbished)
+- In-stock / out-of-stock availability URLs
+
+### Merchant policies (return & shipping)
+Injects `offers.hasMerchantReturnPolicy` and `offers.shippingDetails` — required by Google & ChatGPT Shopping since Jan 2026. **Disabled by default**; enable and fill in your real values.
+- Return policy: enable, return window (days), applicable country, return fee
+- Shipping details: enable, flat shipping rate, destination country, handling time (min/max days), transit time (min/max days)
 
 ### Organization schema
 - Organization name (default: store name)

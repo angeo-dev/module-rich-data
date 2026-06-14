@@ -14,6 +14,7 @@
                 <item name="website"      xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\WebSiteBuilder</item>
                 <item name="product"      xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\ProductBuilder</item>
                 <item name="breadcrumb"   xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\BreadcrumbBuilder</item>
+                <item name="collection_page" xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\CollectionPageBuilder</item>
                 <item name="faq"          xsi:type="object">Angeo\RichData\Model\JsonLd\Builder\FaqBuilder</item>
             </argument>
         </arguments>

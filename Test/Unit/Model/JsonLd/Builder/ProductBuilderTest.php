@@ -54,6 +54,17 @@ class ProductBuilderTest extends TestCase
             ['angeo_rich_data/product/availability_out_of_stock','store', 1, 'https://schema.org/OutOfStock'],
             ['angeo_rich_data/product/condition',                'store', 1, 'NewCondition'],
             ['angeo_rich_data/product/brand_attribute',          'store', 1, 'manufacturer'],
+            ['angeo_rich_data/product/gtin_attribute',           'store', 1, ''],
+            ['angeo_rich_data/product/mpn_attribute',            'store', 1, ''],
+            ['angeo_rich_data/merchant_policies/return_days',    'store', 1, '30'],
+            ['angeo_rich_data/merchant_policies/return_country', 'store', 1, 'US'],
+            ['angeo_rich_data/merchant_policies/return_fee',     'store', 1, 'FreeReturn'],
+            ['angeo_rich_data/merchant_policies/shipping_rate',  'store', 1, '0'],
+            ['angeo_rich_data/merchant_policies/shipping_country','store', 1, 'US'],
+            ['angeo_rich_data/merchant_policies/handling_days_min','store', 1, '1'],
+            ['angeo_rich_data/merchant_policies/handling_days_max','store', 1, '2'],
+            ['angeo_rich_data/merchant_policies/transit_days_min','store', 1, '2'],
+            ['angeo_rich_data/merchant_policies/transit_days_max','store', 1, '5'],
         ]);
 
         $this->product = $this->createMock(Product::class);
@@ -157,6 +168,34 @@ class ProductBuilderTest extends TestCase
         $result = $this->builder->build($this->store, ['product' => $this->product]);
 
         $this->assertSame('https://schema.org/OutOfStock', $result['offers']['availability']);
+    }
+
+    public function testBuildIncludesMerchantReturnPolicy(): void
+    {
+        $result = $this->builder->build($this->store, ['product' => $this->product]);
+
+        $this->assertArrayHasKey('hasMerchantReturnPolicy', $result['offers']);
+        $policy = $result['offers']['hasMerchantReturnPolicy'];
+        $this->assertSame('MerchantReturnPolicy', $policy['@type']);
+        $this->assertSame('US', $policy['applicableCountry']);
+        $this->assertSame(30, $policy['merchantReturnDays']);
+        $this->assertSame('https://schema.org/MerchantReturnFiniteReturnWindow', $policy['returnPolicyCategory']);
+        $this->assertSame('https://schema.org/FreeReturn', $policy['returnFees']);
+    }
+
+    public function testBuildIncludesShippingDetails(): void
+    {
+        $result = $this->builder->build($this->store, ['product' => $this->product]);
+
+        $this->assertArrayHasKey('shippingDetails', $result['offers']);
+        $shipping = $result['offers']['shippingDetails'];
+        $this->assertSame('OfferShippingDetails', $shipping['@type']);
+        $this->assertSame('0.00', $shipping['shippingRate']['value']);
+        $this->assertSame('USD', $shipping['shippingRate']['currency']);
+        $this->assertSame('US', $shipping['shippingDestination']['addressCountry']);
+        $this->assertArrayHasKey('deliveryTime', $shipping);
+        $this->assertSame(1, $shipping['deliveryTime']['handlingTime']['minValue']);
+        $this->assertSame(5, $shipping['deliveryTime']['transitTime']['maxValue']);
     }
 
     public function testIsEnabledReturnsTrueWhenConfigEnabled(): void

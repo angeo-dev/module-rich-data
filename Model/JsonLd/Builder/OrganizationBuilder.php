@@ -31,6 +31,12 @@ class OrganizationBuilder extends AbstractBuilder
             'url'      => rtrim($store->getBaseUrl(), '/'),
         ];
 
+        // description — recommended by AI crawlers as the brand entity summary.
+        $description = $this->getConfig('angeo_rich_data/organization/description', $store);
+        if ($description !== '') {
+            $schema['description'] = $description;
+        }
+
         $logo = $this->getConfig('angeo_rich_data/organization/logo', $store);
         if ($logo) {
             $schema['logo'] = [

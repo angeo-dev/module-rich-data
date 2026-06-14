@@ -13,13 +13,30 @@
                 <include_sku>1</include_sku>
                 <include_brand>0</include_brand>
                 <brand_attribute>manufacturer</brand_attribute>
+                <include_identifiers>0</include_identifiers>
+                <gtin_attribute></gtin_attribute>
+                <mpn_attribute></mpn_attribute>
                 <availability_in_stock>https://schema.org/InStock</availability_in_stock>
                 <availability_out_of_stock>https://schema.org/OutOfStock</availability_out_of_stock>
                 <condition>NewCondition</condition>
             </product>
+            <merchant_policies>
+                <return_enabled>0</return_enabled>
+                <return_days>30</return_days>
+                <return_country>US</return_country>
+                <return_fee>FreeReturn</return_fee>
+                <shipping_enabled>0</shipping_enabled>
+                <shipping_rate>0</shipping_rate>
+                <shipping_country>US</shipping_country>
+                <handling_days_min></handling_days_min>
+                <handling_days_max></handling_days_max>
+                <transit_days_min></transit_days_min>
+                <transit_days_max></transit_days_max>
+            </merchant_policies>
             <organization>
                 <enabled>1</enabled>
                 <name></name>
+                <description></description>
                 <logo></logo>
                 <same_as></same_as>
                 <contact_type>customer service</contact_type>
@@ -29,6 +46,9 @@
                 <enabled>1</enabled>
                 <include_searchaction>1</include_searchaction>
             </website>
+            <collection_page>
+                <enabled>1</enabled>
+            </collection_page>
             <faq>
                 <enabled>1</enabled>
             </faq>
