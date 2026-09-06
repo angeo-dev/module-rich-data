@@ -9,8 +9,13 @@ use Magento\Store\Api\Data\StoreInterface;
 /**
  * Contract for all JSON-LD schema builders.
  *
- * Each builder is responsible for one schema type (Product, Organization, etc.)
- * and returns a PHP array that is JSON-encoded and injected into the page.
+ * Each builder owns one schema type (Product, Organization, ...) and returns a
+ * PHP array. The renderer encodes it and injects it into the page, either as a
+ * single @graph document (default since 2.0.0) or as one script tag per builder
+ * (legacy mode).
+ *
+ * Builders SHOULD set an '@id' on their root node so that nodes can reference
+ * each other. They MAY set '@context'; the renderer strips it in graph mode.
  *
  * Register via di.xml to add custom schema types:
  *
@@ -32,8 +37,8 @@ interface SchemaInterface
      * Build the schema array for a given context.
      *
      * @param StoreInterface $store   Current store
-     * @param array          $context Additional context (product, page, etc.)
-     * @return array|null  Schema array, or NULL if this builder has nothing to output in this context
+     * @param array $context Additional context (product, category, page type, ...)
+     * @return array|null Schema array, or NULL if this builder has nothing to output here
      */
     public function build(StoreInterface $store, array $context = []): ?array;
 

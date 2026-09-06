@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Angeo\RichData\Test\Unit\Model\JsonLd\Renderer;
 
 use Angeo\RichData\Api\Data\SchemaInterface;
+use Angeo\RichData\Model\Config\Source\OutputMode;
+use Angeo\RichData\Model\JsonLd\JsonEncoder;
 use Angeo\RichData\Model\JsonLd\Renderer\SchemaRenderer;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Api\Data\StoreInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -14,143 +17,122 @@ use Psr\Log\LoggerInterface;
 class SchemaRendererTest extends TestCase
 {
     private LoggerInterface|MockObject $logger;
-    private StoreInterface|MockObject  $store;
+    private ScopeConfigInterface|MockObject $scopeConfig;
+    private StoreInterface|MockObject $store;
 
     protected function setUp(): void
     {
-        $this->logger = $this->createMock(LoggerInterface::class);
-        $this->store  = $this->createMock(StoreInterface::class);
+        $this->logger      = $this->createMock(LoggerInterface::class);
+        $this->scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $this->store       = $this->createMock(StoreInterface::class);
         $this->store->method('getId')->willReturn(1);
     }
 
-    private function mockBuilder(string $type, array $schema, bool $enabled = true): SchemaInterface|MockObject
+    public function testGraphModeMergesEveryNodeIntoOneScriptTag(): void
+    {
+        $this->useMode(OutputMode::MODE_GRAPH);
+
+        $renderer = $this->createRenderer([
+            $this->builder('organization', ['@context' => 'https://schema.org', '@type' => 'Organization']),
+            $this->builder('product', ['@context' => 'https://schema.org', '@type' => 'Product']),
+        ]);
+
+        $html = $renderer->render($this->store);
+
+        $this->assertSame(1, substr_count($html, '<script type="application/ld+json">'));
+
+        $payload = $this->extractJson($html)[0];
+        $this->assertSame('https://schema.org', $payload['@context']);
+        $this->assertCount(2, $payload['@graph']);
+        $this->assertArrayNotHasKey('@context', $payload['@graph'][0], 'inner nodes must not repeat @context');
+    }
+
+    public function testLegacyModeKeepsOneScriptTagPerBuilder(): void
+    {
+        $this->useMode(OutputMode::MODE_LEGACY);
+
+        $renderer = $this->createRenderer([
+            $this->builder('organization', ['@type' => 'Organization']),
+            $this->builder('product', ['@type' => 'Product']),
+        ]);
+
+        $html = $renderer->render($this->store);
+
+        $this->assertSame(2, substr_count($html, '<script type="application/ld+json">'));
+
+        foreach ($this->extractJson($html) as $payload) {
+            $this->assertSame('https://schema.org', $payload['@context']);
+        }
+    }
+
+    public function testDisabledBuilderIsSkipped(): void
+    {
+        $this->useMode(OutputMode::MODE_GRAPH);
+
+        $renderer = $this->createRenderer([
+            $this->builder('product', ['@type' => 'Product'], false),
+        ]);
+
+        $this->assertSame('', $renderer->render($this->store));
+    }
+
+    public function testFailingBuilderIsLoggedAndDoesNotStopTheOthers(): void
+    {
+        $this->useMode(OutputMode::MODE_GRAPH);
+
+        $broken = $this->createMock(SchemaInterface::class);
+        $broken->method('getType')->willReturn('broken');
+        $broken->method('isEnabled')->willReturn(true);
+        $broken->method('build')->willThrowException(new \RuntimeException('boom'));
+
+        $this->logger->expects($this->once())->method('error');
+
+        $renderer = $this->createRenderer([
+            $broken,
+            $this->builder('product', ['@type' => 'Product']),
+        ]);
+
+        $payload = $this->extractJson($renderer->render($this->store))[0];
+
+        $this->assertCount(1, $payload['@graph']);
+        $this->assertSame('Product', $payload['@graph'][0]['@type']);
+    }
+
+    public function testCollectReturnsRawNodes(): void
+    {
+        $this->useMode(OutputMode::MODE_GRAPH);
+
+        $renderer = $this->createRenderer([$this->builder('product', ['@type' => 'Product'])]);
+
+        $this->assertSame([['@type' => 'Product']], $renderer->collect($this->store));
+    }
+
+    private function useMode(string $mode): void
+    {
+        $this->scopeConfig->method('getValue')->willReturn($mode);
+    }
+
+    /** @param SchemaInterface[] $builders */
+    private function createRenderer(array $builders): SchemaRenderer
+    {
+        return new SchemaRenderer($this->logger, new JsonEncoder(false), $this->scopeConfig, $builders);
+    }
+
+    private function builder(string $type, array $schema, bool $enabled = true): SchemaInterface
     {
         $builder = $this->createMock(SchemaInterface::class);
         $builder->method('getType')->willReturn($type);
         $builder->method('isEnabled')->willReturn($enabled);
         $builder->method('build')->willReturn($schema);
+
         return $builder;
     }
 
-    public function testRenderReturnsEmptyStringWithNoBuilders(): void
+    /** @return array<int, array> */
+    private function extractJson(string $html): array
     {
-        $renderer = new SchemaRenderer($this->logger, []);
-        $this->assertSame('', $renderer->render($this->store));
-    }
+        preg_match_all('#<script type="application/ld\+json">\s*(.*?)\s*</script>#s', $html, $matches);
 
-    public function testRenderProducesScriptTag(): void
-    {
-        $builder = $this->mockBuilder('product', [
-            '@context' => 'https://schema.org',
-            '@type'    => 'Product',
-            'name'     => 'Test Product',
-        ]);
-
-        $renderer = new SchemaRenderer($this->logger, [$builder]);
-        $output   = $renderer->render($this->store, ['page_type' => 'catalog_product_view']);
-
-        $this->assertStringContainsString('<script type="application/ld+json">', $output);
-        $this->assertStringContainsString('</script>', $output);
-        $this->assertStringContainsString('"@type": "Product"', $output);
-    }
-
-    public function testRenderSkipsDisabledBuilders(): void
-    {
-        $disabledBuilder = $this->mockBuilder('product', ['@type' => 'Product', 'name' => 'X'], false);
-        $enabledBuilder  = $this->mockBuilder('organization', ['@type' => 'Organization', 'name' => 'Y'], true);
-
-        $renderer = new SchemaRenderer($this->logger, [$disabledBuilder, $enabledBuilder]);
-        $output   = $renderer->render($this->store);
-
-        $this->assertStringNotContainsString('"Product"', $output);
-        $this->assertStringContainsString('"Organization"', $output);
-    }
-
-    public function testRenderSkipsNullOutput(): void
-    {
-        $builder = $this->createMock(SchemaInterface::class);
-        $builder->method('isEnabled')->willReturn(true);
-        $builder->method('build')->willReturn(null);
-
-        $renderer = new SchemaRenderer($this->logger, [$builder]);
-        $this->assertSame('', $renderer->render($this->store));
-    }
-
-    public function testRenderSkipsEmptyArrayOutput(): void
-    {
-        $builder = $this->mockBuilder('website', []);
-
-        $renderer = new SchemaRenderer($this->logger, [$builder]);
-        $this->assertSame('', $renderer->render($this->store));
-    }
-
-    public function testRenderConcatenatesMultipleBuilders(): void
-    {
-        $b1 = $this->mockBuilder('product',      ['@type' => 'Product',      '@context' => 'https://schema.org']);
-        $b2 = $this->mockBuilder('organization', ['@type' => 'Organization', '@context' => 'https://schema.org']);
-
-        $renderer = new SchemaRenderer($this->logger, [$b1, $b2]);
-        $output   = $renderer->render($this->store);
-
-        $this->assertStringContainsString('"Product"', $output);
-        $this->assertStringContainsString('"Organization"', $output);
-
-        // Two separate script blocks
-        $this->assertSame(2, substr_count($output, '<script type="application/ld+json">'));
-    }
-
-    public function testRenderLogsErrorAndContinuesOnBuilderException(): void
-    {
-        $failingBuilder = $this->createMock(SchemaInterface::class);
-        $failingBuilder->method('isEnabled')->willReturn(true);
-        $failingBuilder->method('build')->willThrowException(new \RuntimeException('DB error'));
-
-        $goodBuilder = $this->mockBuilder('organization', ['@type' => 'Organization', '@context' => 'https://schema.org']);
-
-        $this->logger->expects($this->once())->method('error');
-
-        $renderer = new SchemaRenderer($this->logger, [$failingBuilder, $goodBuilder]);
-        $output   = $renderer->render($this->store);
-
-        // Good builder still ran
-        $this->assertStringContainsString('"Organization"', $output);
-    }
-
-    public function testRenderTypeReturnsCorrectBuilder(): void
-    {
-        $orgBuilder  = $this->mockBuilder('organization', ['@type' => 'Organization', '@context' => 'https://schema.org']);
-        $prodBuilder = $this->mockBuilder('product',      ['@type' => 'Product',      '@context' => 'https://schema.org']);
-
-        $renderer = new SchemaRenderer($this->logger, [$orgBuilder, $prodBuilder]);
-        $output   = $renderer->renderType('product', $this->store);
-
-        $this->assertStringContainsString('"Product"', $output);
-        $this->assertStringNotContainsString('"Organization"', $output);
-    }
-
-    public function testRenderTypeReturnsEmptyForUnknownType(): void
-    {
-        $renderer = new SchemaRenderer($this->logger, []);
-        $this->assertSame('', $renderer->renderType('nonexistent', $this->store));
-    }
-
-    public function testOutputIsValidJson(): void
-    {
-        $schema = [
-            '@context' => 'https://schema.org',
-            '@type'    => 'Product',
-            'name'     => 'Widget with "quotes" & <special> chars',
-            'offers'   => ['@type' => 'Offer', 'price' => '19.99'],
-        ];
-
-        $builder  = $this->mockBuilder('product', $schema);
-        $renderer = new SchemaRenderer($this->logger, [$builder]);
-        $output   = $renderer->render($this->store);
-
-        preg_match('/<script[^>]+>(.*?)<\/script>/si', $output, $matches);
-        $decoded = json_decode(trim($matches[1]), true);
-
-        $this->assertNotNull($decoded, 'Output must be valid JSON');
-        $this->assertSame('Product', $decoded['@type']);
+        return array_map(static fn ($json) => json_decode($json, true), $matches[1]);
     }
 }

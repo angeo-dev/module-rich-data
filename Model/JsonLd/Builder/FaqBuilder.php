@@ -4,24 +4,37 @@ declare(strict_types=1);
 
 namespace Angeo\RichData\Model\JsonLd\Builder;
 
+use Angeo\RichData\Model\JsonLd\IdFactory;
+use Angeo\RichData\Model\Page\FaqPageMatcher;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Api\Data\StoreInterface;
 
 /**
- * Builds FAQPage JSON-LD from CMS page content.
- *
- * Parses Q&A pairs from CMS page HTML using two strategies:
- * 1. Explicit data-faq-question / data-faq-answer attributes (recommended)
- * 2. Heuristic: <h2>/<h3> followed by <p> (auto-detection)
+ * Builds FAQPage from CMS page content.
  *
  * Context keys:
- *   'cms_page_content' => string  — raw CMS page HTML content
- *   'page_type'        => string  — Magento full action name
+ *   'cms_page_content'    => string
+ *   'cms_page_identifier' => string
+ *   'page_url'            => string
  */
 class FaqBuilder extends AbstractBuilder
 {
-    private const MIN_ANSWER_LENGTH = 20;
+    private const MIN_QUESTION_LENGTH = 10;
+    private const MIN_ANSWER_LENGTH   = 20;
+    private const MAX_PAIRS           = 10;
 
-    public function getType(): string { return 'faq'; }
+    public function __construct(
+        ScopeConfigInterface $scopeConfig,
+        private readonly FaqPageMatcher $faqPageMatcher,
+        private readonly IdFactory $idFactory,
+    ) {
+        parent::__construct($scopeConfig);
+    }
+
+    public function getType(): string
+    {
+        return 'faq';
+    }
 
     protected function getEnabledConfigPath(): string
     {
@@ -30,15 +43,24 @@ class FaqBuilder extends AbstractBuilder
 
     public function build(StoreInterface $store, array $context = []): ?array
     {
-        $content = $context['cms_page_content'] ?? '';
-        if (!$content) {
+        $identifier = (string) ($context['cms_page_identifier'] ?? '');
+        $allowed    = $this->toList($this->getConfig('angeo_rich_data/faq/cms_identifiers', $store));
+
+        if (!$this->faqPageMatcher->matches($identifier, $allowed)) {
             return null;
         }
 
-        $pairs = $this->extractExplicitPairs($content)
-            ?: $this->extractHeuristicPairs($content);
+        $content = (string) ($context['cms_page_content'] ?? '');
+        if (trim($content) === '') {
+            return null;
+        }
 
-        if (empty($pairs)) {
+        $pairs = $this->extractExplicitPairs($content);
+        if ($pairs === []) {
+            $pairs = $this->extractHeuristicPairs($content);
+        }
+
+        if ($pairs === []) {
             return null;
         }
 
@@ -54,40 +76,55 @@ class FaqBuilder extends AbstractBuilder
             ];
         }
 
+        $pageUrl = (string) ($context['page_url'] ?? $this->idFactory->base($store));
+
         return [
             '@context'   => 'https://schema.org',
             '@type'      => 'FAQPage',
+            '@id'        => $this->idFactory->forPage($pageUrl, IdFactory::FRAGMENT_FAQ),
+            'url'        => $pageUrl,
             'mainEntity' => $entities,
         ];
     }
 
     /**
-     * Parse data-faq-question / data-faq-answer attribute pairs.
-     * Recommended markup: <div data-faq-question="..." data-faq-answer="..."/>
+     * data-faq-question / data-faq-answer attribute pairs.
      */
     private function extractExplicitPairs(string $html): array
     {
         $pairs = [];
+
         preg_match_all(
             '/data-faq-question=["\']([^"\']+)["\'][^>]*data-faq-answer=["\']([^"\']+)["\']/i',
             $html,
             $matches,
             PREG_SET_ORDER
         );
-        foreach ($matches as $m) {
-            $pairs[] = ['question' => htmlspecialchars_decode($m[1]), 'answer' => htmlspecialchars_decode($m[2])];
+
+        foreach ($matches as $match) {
+            $pairs[] = [
+                'question' => htmlspecialchars_decode($match[1]),
+                'answer'   => htmlspecialchars_decode($match[2]),
+            ];
+
+            if (count($pairs) >= self::MAX_PAIRS) {
+                break;
+            }
         }
+
         return $pairs;
     }
 
     /**
-     * Heuristic: find <h2>/<h3> followed immediately by <p>.
-     * Works on most FAQ page structures without markup changes.
+     * Heuristic: <h2>/<h3> immediately followed by <p>.
+     *
+     * Length checks use mb_strlen; 1.x counted bytes, so a short Cyrillic or
+     * Greek heading passed a check written for characters.
      */
     private function extractHeuristicPairs(string $html): array
     {
         $pairs = [];
-        // Extract h2/h3 + following p pairs
+
         preg_match_all(
             '/<h[23][^>]*>(.*?)<\/h[23]>\s*<p[^>]*>(.*?)<\/p>/si',
             $html,
@@ -95,18 +132,23 @@ class FaqBuilder extends AbstractBuilder
             PREG_SET_ORDER
         );
 
-        foreach ($matches as $m) {
-            $question = trim(strip_tags($m[1]));
-            $answer   = trim(strip_tags($m[2]));
+        foreach ($matches as $match) {
+            $question = trim(strip_tags($match[1]));
+            $answer   = trim(strip_tags($match[2]));
 
-            if (strlen($question) < 10 || strlen($answer) < self::MIN_ANSWER_LENGTH) {
+            if (mb_strlen($question) < self::MIN_QUESTION_LENGTH
+                || mb_strlen($answer) < self::MIN_ANSWER_LENGTH
+            ) {
                 continue;
             }
 
-            $pairs[] = ['question' => $question, 'answer' => mb_substr($answer, 0, 2000)];
+            $pairs[] = [
+                'question' => $question,
+                'answer'   => mb_substr($answer, 0, 2000),
+            ];
 
-            if (count($pairs) >= 10) {
-                break; // cap at 10 Q&A pairs
+            if (count($pairs) >= self::MAX_PAIRS) {
+                break;
             }
         }
 

@@ -13,15 +13,16 @@ abstract class AbstractBuilder implements SchemaInterface
 {
     public function __construct(
         protected readonly ScopeConfigInterface $scopeConfig,
-    ) {}
+    ) {
+    }
 
     protected function getConfig(string $path, StoreInterface $store): string
     {
-        return (string) $this->scopeConfig->getValue(
+        return trim((string) $this->scopeConfig->getValue(
             $path,
             ScopeInterface::SCOPE_STORE,
             $store->getId()
-        );
+        ));
     }
 
     protected function isConfigEnabled(string $path, StoreInterface $store): bool
@@ -37,6 +38,20 @@ abstract class AbstractBuilder implements SchemaInterface
     {
         return $this->isConfigEnabled('angeo_rich_data/general/enabled', $store)
             && $this->isConfigEnabled($this->getEnabledConfigPath(), $store);
+    }
+
+    /**
+     * Split a comma-separated config value into a clean list.
+     *
+     * @return string[]
+     */
+    protected function toList(string $raw): array
+    {
+        if ($raw === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $raw)), static fn ($v) => $v !== ''));
     }
 
     abstract protected function getEnabledConfigPath(): string;

@@ -1,10 +1,9 @@
 <?php
 /** @var \Magento\Framework\View\Element\Template $block */
-/** @var \Angeo\RichData\ViewModel\JsonLd $jsonLd */
-    $jsonLd = $block->getData('view_model');
-    $html   = $jsonLd ? $jsonLd->getSchemaHtml() : '';
+/** @var \Angeo\RichData\ViewModel\JsonLd|null $jsonLd */
+$jsonLd = $block->getData('view_model');
+$html   = $jsonLd instanceof \Angeo\RichData\ViewModel\JsonLd ? $jsonLd->getSchemaHtml() : '';
 ?>
-
-<?php if ($html): ?>
+<?php if ($html !== ''): ?>
     <?= /* @noEscape */ $html ?>
 <?php endif; ?>

@@ -11,10 +11,10 @@ class ItemCondition implements OptionSourceInterface
     public function toOptionArray(): array
     {
         return [
-            ['value' => 'NewCondition',         'label' => 'New'],
-            ['value' => 'UsedCondition',         'label' => 'Used'],
-            ['value' => 'RefurbishedCondition',  'label' => 'Refurbished'],
-            ['value' => 'DamagedCondition',      'label' => 'Damaged'],
+            ['value' => 'NewCondition',         'label' => __('New')],
+            ['value' => 'UsedCondition',         'label' => __('Used')],
+            ['value' => 'RefurbishedCondition',  'label' => __('Refurbished')],
+            ['value' => 'DamagedCondition',      'label' => __('Damaged')],
         ];
     }
 }

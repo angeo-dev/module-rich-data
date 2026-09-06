@@ -6,17 +6,12 @@
             <label>Angeo</label>
         </tab>
 
-        <section id="angeo_rich_data"
-                 translate="label"
-                 sortOrder="200"
-                 showInDefault="1"
-                 showInWebsite="1"
-                 showInStore="1">
+        <section id="angeo_rich_data" translate="label" sortOrder="200"
+                 showInDefault="1" showInWebsite="1" showInStore="1">
             <label>Rich Data (JSON-LD)</label>
             <tab>angeo</tab>
             <resource>Angeo_RichData::config</resource>
 
-            <!-- ── General ──────────────────────────────────────────── -->
             <group id="general" translate="label" sortOrder="10"
                    showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>General</label>
@@ -25,13 +20,18 @@
                     <label>Enabled</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
+                <field id="output_mode" type="select" translate="label comment" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Output mode</label>
+                    <source_model>Angeo\RichData\Model\Config\Source\OutputMode</source_model>
+                    <comment>Graph mode writes every schema into one @graph document with linked @id values, so AI engines see Product, Organization and BreadcrumbList as one connected page entity. Legacy mode reproduces the 1.x output of one script tag per schema.</comment>
+                </field>
             </group>
 
-            <!-- ── Product ──────────────────────────────────────────── -->
-            <group id="product" translate="label" sortOrder="20"
+            <group id="product" translate="label comment" sortOrder="20"
                    showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Product schema</label>
-                <comment>Injects @type:Product JSON-LD on all product pages. Fixes "Product schema" signal in AEO Audit.</comment>
+                <comment>Injects Product JSON-LD on all product pages. Fixes the "Product schema" signal in AEO Audit.</comment>
 
                 <field id="enabled" type="select" translate="label" sortOrder="10"
                        showInDefault="1" showInWebsite="1" showInStore="1">
@@ -43,81 +43,115 @@
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Include AggregateRating</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Adds review rating to Product schema when reviews exist. Recommended — AI engines use this for trust signals.</comment>
+                    <comment>Adds review rating to Product schema when reviews exist. AI engines use this as a trust signal.</comment>
                 </field>
 
-                <field id="include_breadcrumb" type="select" translate="label" sortOrder="30"
-                       showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Include BreadcrumbList</label>
-                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                </field>
-
-                <field id="include_sku" type="select" translate="label" sortOrder="40"
+                <field id="include_sku" type="select" translate="label" sortOrder="30"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Include SKU</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
 
-                <field id="include_brand" type="select" translate="label comment" sortOrder="50"
+                <field id="include_brand" type="select" translate="label comment" sortOrder="40"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Include Brand</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Reads brand from a product attribute. Configure which attribute below.</comment>
+                    <comment>Reads the brand from a product attribute. Choose the attribute below.</comment>
                 </field>
 
-                <field id="brand_attribute" type="text" translate="label comment" sortOrder="60"
+                <field id="brand_attribute" type="text" translate="label comment" sortOrder="50"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Brand attribute code</label>
                     <comment>Product attribute code to use as brand. Default: manufacturer</comment>
                     <depends><field id="include_brand">1</field></depends>
                 </field>
 
-                <field id="condition" type="select" translate="label comment" sortOrder="70"
+                <field id="condition" type="select" translate="label comment" sortOrder="60"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Item condition</label>
                     <source_model>Angeo\RichData\Model\Config\Source\ItemCondition</source_model>
-                    <comment>Applied to all products. Use NewCondition for new stock.</comment>
+                    <comment>Applied to all products. Use New for new stock.</comment>
                 </field>
 
-                <field id="include_identifiers" type="select" translate="label comment" sortOrder="80"
+                <field id="include_identifiers" type="select" translate="label comment" sortOrder="70"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Include GTIN / MPN identifiers</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Adds gtin and/or mpn from product attributes. Improves AI/Google product matching.</comment>
+                    <comment>Adds gtin and mpn from product attributes. Improves AI and Google product matching.</comment>
                 </field>
 
-                <field id="gtin_attribute" type="text" translate="label comment" sortOrder="90"
+                <field id="gtin_attribute" type="text" translate="label comment" sortOrder="80"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>GTIN attribute code</label>
-                    <comment>Product attribute holding GTIN/EAN/UPC. Leave empty to skip.</comment>
+                    <comment>Product attribute holding GTIN, EAN or UPC. Leave empty to skip.</comment>
                     <depends><field id="include_identifiers">1</field></depends>
                 </field>
 
-                <field id="mpn_attribute" type="text" translate="label comment" sortOrder="100"
+                <field id="mpn_attribute" type="text" translate="label comment" sortOrder="90"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>MPN attribute code</label>
                     <comment>Product attribute holding the manufacturer part number. Leave empty to skip.</comment>
                     <depends><field id="include_identifiers">1</field></depends>
                 </field>
 
-                <field id="availability_in_stock" type="text" translate="label comment" sortOrder="110"
+                <field id="include_variants" type="select" translate="label comment" sortOrder="100"
                        showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>In-stock availability URL</label>
-                    <comment>schema.org availability for in-stock products. Default: https://schema.org/InStock</comment>
+                    <label>Publish configurable products as ProductGroup</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Emits ProductGroup with hasVariant, variesBy and productGroupID so each option is a separate variant with its own price and stock. Supported by Google since February 2024 and used by AI shopping surfaces.</comment>
                 </field>
 
-                <field id="availability_out_of_stock" type="text" translate="label comment" sortOrder="120"
+                <field id="max_variants" type="text" translate="label comment" sortOrder="110"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Maximum variants per product</label>
+                    <comment>Keeps the page small on products with many options. Hard limit is 50.</comment>
+                    <validate>validate-digits</validate>
+                    <depends><field id="include_variants">1</field></depends>
+                </field>
+
+                <field id="price_valid_days" type="text" translate="label comment" sortOrder="120"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>priceValidUntil window (days)</label>
+                    <comment>How far ahead the published price is declared valid. Use 0 to omit priceValidUntil.</comment>
+                    <validate>validate-digits</validate>
+                </field>
+
+                <field id="availability_in_stock" type="text" translate="label comment" sortOrder="130"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>In-stock availability URL</label>
+                    <comment>Default: https://schema.org/InStock</comment>
+                </field>
+
+                <field id="availability_out_of_stock" type="text" translate="label comment" sortOrder="140"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Out-of-stock availability URL</label>
-                    <comment>schema.org availability for out-of-stock products. Default: https://schema.org/OutOfStock</comment>
+                    <comment>Default: https://schema.org/OutOfStock</comment>
+                </field>
+
+                <field id="include_breadcrumb" type="select" translate="label comment" sortOrder="200"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Include BreadcrumbList (deprecated)</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>Kept from 1.x so existing settings still apply. Use the Breadcrumb schema group instead. Setting this to No switches breadcrumbs off everywhere.</comment>
                 </field>
             </group>
 
-            <!-- ── Merchant policies ────────────────────────────────── -->
-            <group id="merchant_policies" translate="label" sortOrder="25"
+            <group id="breadcrumb" translate="label comment" sortOrder="22"
                    showInDefault="1" showInWebsite="1" showInStore="1">
-                <label>Merchant policies (return &amp; shipping)</label>
-                <comment>Injects offers.hasMerchantReturnPolicy and offers.shippingDetails. Required by Google &amp; ChatGPT Shopping since Jan 2026. Fixes the "Merchant policies" signal in AEO Audit.</comment>
+                <label>Breadcrumb schema</label>
+                <comment>Injects BreadcrumbList on product, category and CMS pages.</comment>
+
+                <field id="enabled" type="select" translate="label" sortOrder="10"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Enabled</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+            </group>
+
+            <group id="merchant_policies" translate="label comment" sortOrder="25"
+                   showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Merchant policies (return and shipping)</label>
+                <comment>Injects offers.hasMerchantReturnPolicy and offers.shippingDetails. Required by Google and ChatGPT Shopping since January 2026. Fixes the "Merchant policies" signal in AEO Audit.</comment>
 
                 <field id="return_enabled" type="select" translate="label" sortOrder="10"
                        showInDefault="1" showInWebsite="1" showInStore="1">
@@ -128,14 +162,15 @@
                 <field id="return_days" type="text" translate="label comment" sortOrder="20"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Return window (days)</label>
-                    <comment>Number of days a customer has to return an item. 0 = returns not permitted.</comment>
+                    <comment>Days a customer has to return an item. 0 means returns are not permitted.</comment>
+                    <validate>validate-digits</validate>
                     <depends><field id="return_enabled">1</field></depends>
                 </field>
 
                 <field id="return_country" type="text" translate="label comment" sortOrder="30"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Applicable country</label>
-                    <comment>ISO country code(s), comma-separated (e.g. US or US,CA,GB). Default: US</comment>
+                    <comment>ISO country codes, comma-separated, for example US or US,CA,GB.</comment>
                     <depends><field id="return_enabled">1</field></depends>
                 </field>
 
@@ -163,41 +198,44 @@
                 <field id="shipping_country" type="text" translate="label comment" sortOrder="70"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Shipping destination country</label>
-                    <comment>ISO country code(s), comma-separated. Default: US</comment>
+                    <comment>ISO country codes, comma-separated.</comment>
                     <depends><field id="shipping_enabled">1</field></depends>
                 </field>
 
                 <field id="handling_days_min" type="text" translate="label comment" sortOrder="80"
                        showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Handling time — min days</label>
-                    <comment>Business days to prepare an order before dispatch. Leave all 4 time fields empty to omit deliveryTime.</comment>
+                    <label>Handling time, min days</label>
+                    <comment>Business days needed to prepare an order. Leave all four time fields empty to omit deliveryTime.</comment>
+                    <validate>validate-digits</validate>
                     <depends><field id="shipping_enabled">1</field></depends>
                 </field>
 
                 <field id="handling_days_max" type="text" translate="label" sortOrder="90"
                        showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Handling time — max days</label>
+                    <label>Handling time, max days</label>
+                    <validate>validate-digits</validate>
                     <depends><field id="shipping_enabled">1</field></depends>
                 </field>
 
                 <field id="transit_days_min" type="text" translate="label" sortOrder="100"
                        showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Transit time — min days</label>
+                    <label>Transit time, min days</label>
+                    <validate>validate-digits</validate>
                     <depends><field id="shipping_enabled">1</field></depends>
                 </field>
 
                 <field id="transit_days_max" type="text" translate="label" sortOrder="110"
                        showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Transit time — max days</label>
+                    <label>Transit time, max days</label>
+                    <validate>validate-digits</validate>
                     <depends><field id="shipping_enabled">1</field></depends>
                 </field>
             </group>
 
-            <!-- ── Organization ─────────────────────────────────────── -->
-            <group id="organization" translate="label" sortOrder="30"
+            <group id="organization" translate="label comment" sortOrder="30"
                    showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>Organization schema</label>
-                <comment>Injected on every page. Tells AI crawlers who runs the store — improves brand citation.</comment>
+                <comment>Injected on every page. Tells AI crawlers who runs the store, which helps brand citation.</comment>
 
                 <field id="enabled" type="select" translate="label" sortOrder="10"
                        showInDefault="1" showInWebsite="1" showInStore="1">
@@ -208,25 +246,25 @@
                 <field id="name" type="text" translate="label comment" sortOrder="20"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Organization name</label>
-                    <comment>Leave empty to use Magento store name.</comment>
+                    <comment>Leave empty to use the Magento store name.</comment>
                 </field>
 
                 <field id="description" type="textarea" translate="label comment" sortOrder="25"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Organization description</label>
-                    <comment>1–2 sentences describing the brand. Used as the Organization "description" in JSON-LD — AI engines read it as the brand entity summary.</comment>
+                    <comment>One or two sentences describing the brand. AI engines read it as the brand entity summary.</comment>
                 </field>
 
                 <field id="logo" type="text" translate="label comment" sortOrder="30"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Logo URL</label>
-                    <comment>Full URL to logo image. Recommended: 512×512px PNG.</comment>
+                    <comment>Full URL to the logo image. Recommended: 512x512 px PNG.</comment>
                 </field>
 
                 <field id="same_as" type="textarea" translate="label comment" sortOrder="40"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>sameAs URLs</label>
-                    <comment>Comma-separated social profile URLs (LinkedIn, Facebook, Twitter, etc.).</comment>
+                    <comment>Comma-separated social profile URLs.</comment>
                 </field>
 
                 <field id="contact_telephone" type="text" translate="label" sortOrder="50"
@@ -237,15 +275,14 @@
                 <field id="contact_type" type="text" translate="label comment" sortOrder="60"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Contact type</label>
-                    <comment>E.g. customer service, technical support, sales. Default: customer service</comment>
+                    <comment>For example customer service, technical support, sales.</comment>
                 </field>
             </group>
 
-            <!-- ── WebSite ───────────────────────────────────────────── -->
-            <group id="website" translate="label" sortOrder="40"
+            <group id="website" translate="label comment" sortOrder="40"
                    showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>WebSite schema</label>
-                <comment>Injected on homepage only. Enables Sitelinks Searchbox in Google/AI results.</comment>
+                <comment>Injected on the homepage only. Identifies the site and its publisher.</comment>
 
                 <field id="enabled" type="select" translate="label" sortOrder="10"
                        showInDefault="1" showInWebsite="1" showInStore="1">
@@ -255,17 +292,16 @@
 
                 <field id="include_searchaction" type="select" translate="label comment" sortOrder="20"
                        showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Include SearchAction (Sitelinks Searchbox)</label>
+                    <label>Include SearchAction</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    <comment>Adds potentialAction/SearchAction pointing to Magento catalog search.</comment>
+                    <comment>Google removed the sitelinks search box from search results on 21 November 2024, so this no longer produces a Google feature. The markup is harmless and other consumers may still read it. Off by default since 2.0.0.</comment>
                 </field>
             </group>
 
-            <!-- ── Collection Page (category) ───────────────────────── -->
-            <group id="collection_page" translate="label" sortOrder="45"
+            <group id="collection_page" translate="label comment" sortOrder="45"
                    showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>CollectionPage schema (categories)</label>
-                <comment>Injected on category pages. Emits CollectionPage + ItemList of the category's products — read by the Gemini Shopping Graph.</comment>
+                <comment>Emits CollectionPage and an ItemList of the products on the current category page. Layered-navigation filters are not reflected in the list.</comment>
 
                 <field id="enabled" type="select" translate="label" sortOrder="10"
                        showInDefault="1" showInWebsite="1" showInStore="1">
@@ -274,16 +310,22 @@
                 </field>
             </group>
 
-            <!-- ── FAQ ──────────────────────────────────────────────── -->
-            <group id="faq" translate="label" sortOrder="50"
+            <group id="faq" translate="label comment" sortOrder="50"
                    showInDefault="1" showInWebsite="1" showInStore="1">
                 <label>FAQPage schema</label>
-                <comment>Auto-detected from CMS pages with FAQ content. Fixes "FAQPage schema" signal in AEO Audit.</comment>
+                <comment>Detected from CMS page content. Only pages you name here publish FAQPage markup.</comment>
 
                 <field id="enabled" type="select" translate="label" sortOrder="10"
                        showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Enabled</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+
+                <field id="cms_identifiers" type="textarea" translate="label comment" sortOrder="20"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>CMS page identifiers</label>
+                    <comment>Comma-separated CMS page identifiers allowed to publish FAQPage, for example faq,shipping-faq. Leave empty to allow any identifier containing "faq". The homepage is never treated as an FAQ page.</comment>
+                    <depends><field id="enabled">1</field></depends>
                 </field>
             </group>
 

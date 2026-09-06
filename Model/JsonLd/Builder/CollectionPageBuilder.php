@@ -4,24 +4,27 @@ declare(strict_types=1);
 
 namespace Angeo\RichData\Model\JsonLd\Builder;
 
+use Angeo\RichData\Model\JsonLd\IdFactory;
+use Angeo\RichData\Model\Page\CategoryProductsProvider;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Api\Data\StoreInterface;
 
 /**
- * Builds CollectionPage + ItemList JSON-LD for category pages.
+ * Builds CollectionPage + ItemList for category pages.
  *
- * AI shopping engines (notably the Gemini Shopping Graph) read an ItemList on
- * the category page to understand which products belong to a collection. Stock
- * Magento emits no such schema, so without this builder a category page has no
- * machine-readable product listing.
- *
- * Context keys (set by the ViewModel for catalog_category_view):
- *   'category'        => CategoryInterface  — the current category
- *   'category_products' => array<int, array{name,url,image?,sku?}>  — listed products
+ * Context keys:
+ *   'category'          => CategoryInterface
+ *   'category_products' => array<int, array{name, url, image?, sku?}>
+ *   'page_url'          => string
  */
 class CollectionPageBuilder extends AbstractBuilder
 {
-    /** Hard cap so the ItemList never bloats the page. */
-    private const MAX_ITEMS = 50;
+    public function __construct(
+        ScopeConfigInterface $scopeConfig,
+        private readonly IdFactory $idFactory,
+    ) {
+        parent::__construct($scopeConfig);
+    }
 
     public function getType(): string
     {
@@ -42,16 +45,15 @@ class CollectionPageBuilder extends AbstractBuilder
 
         $products = $context['category_products'] ?? [];
         if (!is_array($products) || $products === []) {
-            // No products to list — emit CollectionPage without an empty ItemList
-            // only if we at least have a name; otherwise skip.
             return null;
         }
 
-        $items = [];
+        $items    = [];
         $position = 1;
+
         foreach ($products as $product) {
-            $name = isset($product['name']) ? trim((string) $product['name']) : '';
-            $url  = isset($product['url']) ? trim((string) $product['url']) : '';
+            $name = trim((string) ($product['name'] ?? ''));
+            $url  = trim((string) ($product['url'] ?? ''));
             if ($name === '' || $url === '') {
                 continue;
             }
@@ -70,7 +72,7 @@ class CollectionPageBuilder extends AbstractBuilder
             $items[] = $listItem;
             $position++;
 
-            if ($position > self::MAX_ITEMS) {
+            if (count($items) >= CategoryProductsProvider::MAX_ITEMS) {
                 break;
             }
         }
@@ -79,16 +81,16 @@ class CollectionPageBuilder extends AbstractBuilder
             return null;
         }
 
-        $categoryName = (string) $category->getName();
-        $baseUrl      = rtrim($store->getBaseUrl(), '/');
-        $categoryUrl  = method_exists($category, 'getUrl') ? (string) $category->getUrl() : $baseUrl;
+        $pageUrl = (string) ($context['page_url'] ?? ($category->getUrl() ?: $this->idFactory->base($store)));
 
         $schema = [
-            '@context'    => 'https://schema.org',
-            '@type'       => 'CollectionPage',
-            'name'        => $categoryName,
-            'url'         => $categoryUrl,
-            'mainEntity'  => [
+            '@context'   => 'https://schema.org',
+            '@type'      => 'CollectionPage',
+            '@id'        => $this->idFactory->forPage($pageUrl, IdFactory::FRAGMENT_COLLECTION),
+            'name'       => (string) $category->getName(),
+            'url'        => $pageUrl,
+            'isPartOf'   => $this->idFactory->ref($this->idFactory->website($store)),
+            'mainEntity' => [
                 '@type'           => 'ItemList',
                 'numberOfItems'   => count($items),
                 'itemListElement' => $items,

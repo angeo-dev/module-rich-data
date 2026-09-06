@@ -4,15 +4,29 @@ declare(strict_types=1);
 
 namespace Angeo\RichData\Model\JsonLd\Builder;
 
+use Angeo\RichData\Model\JsonLd\IdFactory;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Api\Data\StoreInterface;
 
 /**
- * Builds Organization JSON-LD schema injected on every page.
- * Tells AI crawlers who runs the store — improves brand citation.
+ * Builds the Organization node injected on every page.
+ *
+ * Its @id is store-wide rather than page-scoped, so every Offer that names this
+ * store as seller points at one and the same brand entity.
  */
 class OrganizationBuilder extends AbstractBuilder
 {
-    public function getType(): string { return 'organization'; }
+    public function __construct(
+        ScopeConfigInterface $scopeConfig,
+        private readonly IdFactory $idFactory,
+    ) {
+        parent::__construct($scopeConfig);
+    }
+
+    public function getType(): string
+    {
+        return 'organization';
+    }
 
     protected function getEnabledConfigPath(): string
     {
@@ -21,48 +35,42 @@ class OrganizationBuilder extends AbstractBuilder
 
     public function build(StoreInterface $store, array $context = []): ?array
     {
-        $name = $this->getConfig('angeo_rich_data/organization/name', $store)
-            ?: $store->getName();
+        $name = $this->getConfig('angeo_rich_data/organization/name', $store) ?: (string) $store->getName();
 
         $schema = [
             '@context' => 'https://schema.org',
             '@type'    => 'Organization',
+            '@id'      => $this->idFactory->organization($store),
             'name'     => $name,
-            'url'      => rtrim($store->getBaseUrl(), '/'),
+            'url'      => $this->idFactory->base($store),
         ];
 
-        // description — recommended by AI crawlers as the brand entity summary.
         $description = $this->getConfig('angeo_rich_data/organization/description', $store);
         if ($description !== '') {
             $schema['description'] = $description;
         }
 
         $logo = $this->getConfig('angeo_rich_data/organization/logo', $store);
-        if ($logo) {
+        if ($logo !== '') {
             $schema['logo'] = [
-                '@type'       => 'ImageObject',
-                'url'         => $logo,
-                'contentUrl'  => $logo,
+                '@type'      => 'ImageObject',
+                'url'        => $logo,
+                'contentUrl' => $logo,
             ];
         }
 
-        // sameAs — comma-separated social URLs
-        $sameAs = $this->getConfig('angeo_rich_data/organization/same_as', $store);
-        if ($sameAs) {
-            $urls = array_values(array_filter(array_map('trim', explode(',', $sameAs))));
-            if (!empty($urls)) {
-                $schema['sameAs'] = $urls;
-            }
+        $sameAs = $this->toList($this->getConfig('angeo_rich_data/organization/same_as', $store));
+        if ($sameAs !== []) {
+            $schema['sameAs'] = $sameAs;
         }
 
-        // ContactPoint
-        $phone       = $this->getConfig('angeo_rich_data/organization/contact_telephone', $store);
-        $contactType = $this->getConfig('angeo_rich_data/organization/contact_type', $store);
-        if ($phone) {
+        $phone = $this->getConfig('angeo_rich_data/organization/contact_telephone', $store);
+        if ($phone !== '') {
             $schema['contactPoint'] = [
                 '@type'       => 'ContactPoint',
                 'telephone'   => $phone,
-                'contactType' => $contactType ?: 'customer service',
+                'contactType' => $this->getConfig('angeo_rich_data/organization/contact_type', $store)
+                    ?: 'customer service',
             ];
         }
 

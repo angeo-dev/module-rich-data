@@ -5,6 +5,7 @@
         <angeo_rich_data>
             <general>
                 <enabled>1</enabled>
+                <output_mode>graph</output_mode>
             </general>
             <product>
                 <enabled>1</enabled>
@@ -14,12 +15,18 @@
                 <include_brand>0</include_brand>
                 <brand_attribute>manufacturer</brand_attribute>
                 <include_identifiers>0</include_identifiers>
-                <gtin_attribute></gtin_attribute>
-                <mpn_attribute></mpn_attribute>
+                <gtin_attribute/>
+                <mpn_attribute/>
+                <include_variants>1</include_variants>
+                <max_variants>20</max_variants>
+                <price_valid_days>365</price_valid_days>
                 <availability_in_stock>https://schema.org/InStock</availability_in_stock>
                 <availability_out_of_stock>https://schema.org/OutOfStock</availability_out_of_stock>
                 <condition>NewCondition</condition>
             </product>
+            <breadcrumb>
+                <enabled>1</enabled>
+            </breadcrumb>
             <merchant_policies>
                 <return_enabled>0</return_enabled>
                 <return_days>30</return_days>
@@ -28,29 +35,30 @@
                 <shipping_enabled>0</shipping_enabled>
                 <shipping_rate>0</shipping_rate>
                 <shipping_country>US</shipping_country>
-                <handling_days_min></handling_days_min>
-                <handling_days_max></handling_days_max>
-                <transit_days_min></transit_days_min>
-                <transit_days_max></transit_days_max>
+                <handling_days_min/>
+                <handling_days_max/>
+                <transit_days_min/>
+                <transit_days_max/>
             </merchant_policies>
             <organization>
                 <enabled>1</enabled>
-                <name></name>
-                <description></description>
-                <logo></logo>
-                <same_as></same_as>
+                <name/>
+                <description/>
+                <logo/>
+                <same_as/>
                 <contact_type>customer service</contact_type>
-                <contact_telephone></contact_telephone>
+                <contact_telephone/>
             </organization>
             <website>
                 <enabled>1</enabled>
-                <include_searchaction>1</include_searchaction>
+                <include_searchaction>0</include_searchaction>
             </website>
             <collection_page>
                 <enabled>1</enabled>
             </collection_page>
             <faq>
                 <enabled>1</enabled>
+                <cms_identifiers/>
             </faq>
         </angeo_rich_data>
     </default>

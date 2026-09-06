@@ -5,6 +5,8 @@
         <sequence>
             <module name="Magento_Store"/>
             <module name="Magento_Catalog"/>
+            <module name="Magento_CatalogInventory"/>
+            <module name="Magento_ConfigurableProduct"/>
             <module name="Magento_Review"/>
             <module name="Magento_Cms"/>
             <module name="Magento_Backend"/>

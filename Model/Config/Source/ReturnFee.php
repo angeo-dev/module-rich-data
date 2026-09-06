@@ -14,9 +14,9 @@ class ReturnFee implements OptionSourceInterface
     public function toOptionArray(): array
     {
         return [
-            ['value' => 'FreeReturn',            'label' => 'Free return'],
-            ['value' => 'ReturnShippingFees',    'label' => 'Customer pays return shipping'],
-            ['value' => 'RestockingFees',        'label' => 'Restocking fee'],
+            ['value' => 'FreeReturn',            'label' => __('Free return')],
+            ['value' => 'ReturnShippingFees',    'label' => __('Customer pays return shipping')],
+            ['value' => 'RestockingFees',        'label' => __('Restocking fee')],
         ];
     }
 }
