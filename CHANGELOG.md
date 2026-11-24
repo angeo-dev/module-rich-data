@@ -3,6 +3,40 @@
 All notable changes to `angeo/module-rich-data` are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] - 2026-11-23
+
+### Fixed
+
+- **Product schema had no `description` when the short description was
+  only markup or whitespace** (`<p>&nbsp;</p>`, an empty Page Builder row).
+  It looked non-empty, so the description was never tried. Now: short
+  description if it has 50+ characters of text, else the description, else
+  the longest of short and meta description. `<style>`, `<script>` and
+  `{{widget}}` content no longer leak into the text.
+- **Description, image file and aggregate rating were never read on a real
+  store.** Magento's `getShortDescription()`, `getDescription()`,
+  `getMetaDescription()`, `getImage()` and `getRatingSummary()` are magic
+  (`__call`), so the `method_exists()` check in front of them was always
+  false. They are read with `getData()` now. (Unit tests mocked them as real
+  methods and could not see it.)
+
+### Added
+
+- **Better `og:description`** (*Product schema → Better og:description*, on
+  by default). Magento prints the raw short description; this uses the meta
+  description, short description or description — the first with 50+
+  characters — cut to 160 at a word. Same template as Magento's otherwise.
+
+### Build
+
+- Same tooling as the other angeo modules: PHPStan 2 with
+  `bitexpert/phpstan-magento` (`phpstan.neon`, level 5),
+  `magento/magento-coding-standard`, CI on PHP 8.1–8.5.
+- PHP 8.1 supported (`~8.1.0||…||~8.5.0`); the code uses nothing
+  newer.
+- Magento dependencies bounded (`^103.0` instead of `>=103.0.0`), so
+  `composer validate --strict` passes; `allow-plugins` set.
+
 ## [2.0.0] - 2026-09-04
 
 ### Security

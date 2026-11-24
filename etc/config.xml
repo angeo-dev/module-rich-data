@@ -20,6 +20,8 @@
                 <include_variants>1</include_variants>
                 <max_variants>20</max_variants>
                 <price_valid_days>365</price_valid_days>
+                <!-- 2.1.0 -->
+                <og_description>1</og_description>
                 <availability_in_stock>https://schema.org/InStock</availability_in_stock>
                 <availability_out_of_stock>https://schema.org/OutOfStock</availability_out_of_stock>
                 <condition>NewCondition</condition>

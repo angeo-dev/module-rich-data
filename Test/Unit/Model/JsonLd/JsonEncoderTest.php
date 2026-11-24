@@ -38,10 +38,12 @@ class JsonEncoderTest extends TestCase
     {
         $json = $this->encoder->encode(['name' => '<b>Tom & "Jerry\'s"</b>']);
 
+        // The string literal between the quotes that delimit the value.
+        $this->assertSame(1, preg_match('/"name":\s*"(.*)"\s*}\s*$/s', $json, $match), $json);
         foreach (['<', '>', '&', '"', "'"] as $character) {
             $this->assertStringNotContainsString(
                 $character,
-                str_replace(['{', '}', ':', ',', '"name"'], '', $json),
+                $match[1],
                 'raw ' . $character . ' must not survive encoding'
             );
         }

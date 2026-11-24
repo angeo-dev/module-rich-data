@@ -153,7 +153,7 @@ class BreadcrumbTrailBuilder
         }
 
         $collection = $this->categoryCollectionFactory->create();
-        $collection->setStore($store)
+        $collection->setStore((int) $store->getId())
             ->addAttributeToSelect(['name', 'is_active', 'url_key', 'url_path'])
             ->addFieldToFilter('entity_id', ['in' => $ids]);
 

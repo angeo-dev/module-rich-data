@@ -295,7 +295,7 @@ class ValidateCommand extends Command
     {
         $collection = $this->productCollectionFactory->create();
         $collection->addAttributeToSelect('*')
-            ->addAttributeToFilter('status', Status::STATUS_ENABLED)
+            ->addAttributeToFilter('status', ['eq' => Status::STATUS_ENABLED])
             ->addAttributeToFilter('visibility', [
                 'in' => [Visibility::VISIBILITY_IN_CATALOG, Visibility::VISIBILITY_BOTH],
             ])

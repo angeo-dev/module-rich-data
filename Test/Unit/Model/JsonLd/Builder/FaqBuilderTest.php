@@ -9,6 +9,7 @@ use Angeo\RichData\Model\JsonLd\IdFactory;
 use Angeo\RichData\Model\Page\FaqPageMatcher;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Api\Data\StoreInterface;
+use Magento\Store\Model\Store;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
@@ -24,7 +25,7 @@ class FaqBuilderTest extends TestCase
     protected function setUp(): void
     {
         $this->scopeConfig = $this->createMock(ScopeConfigInterface::class);
-        $this->store       = $this->createMock(StoreInterface::class);
+        $this->store       = $this->createMock(Store::class);
         $this->store->method('getId')->willReturn(1);
         $this->store->method('getBaseUrl')->willReturn('https://shop.test/');
 

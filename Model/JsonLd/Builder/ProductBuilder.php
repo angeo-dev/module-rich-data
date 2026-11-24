@@ -11,6 +11,7 @@ use Angeo\RichData\Model\Product\VariantResolver;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Helper\Image as ImageHelper;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\DataObject;
 use Magento\Review\Model\ReviewFactory;
 use Magento\Store\Api\Data\StoreInterface;
 
@@ -298,8 +299,23 @@ class ProductBuilder extends AbstractBuilder
         return trim((string) $value);
     }
 
-    private function textValue(ProductInterface $product, string $getter): string
+    /**
+     * Text value of a product attribute.
+     *
+     * 2.1.0: Magento's EAV getters (getShortDescription(), getDescription(),
+     * getMetaDescription(), getImage()) are magic (__call), so the
+     * method_exists() check used before was false on a real product and these
+     * values were never read: no description, no image file.
+     */
+    private function textValue(ProductInterface $product, string $attribute): string
     {
+        if ($product instanceof DataObject) {
+            $value = $product->getData($attribute);
+
+            return is_scalar($value) ? (string) $value : '';
+        }
+        $getter = 'get' . str_replace('_', '', ucwords($attribute, '_'));
+
         return method_exists($product, $getter) ? (string) $product->{$getter}() : '';
     }
 
@@ -334,13 +350,21 @@ class ProductBuilder extends AbstractBuilder
         return $value !== '' ? ['@type' => 'Brand', 'name' => $value] : null;
     }
 
+    /**
+     * 2.1.0: the short description when it says something (50+ characters),
+     * else the description, else whatever is longest of short description and
+     * meta description. Before, a short description of only whitespace or
+     * markup won, and the schema had no description.
+     */
     private function resolveDescription(ProductInterface $product): string
     {
-        $raw = $this->textValue($product, 'getShortDescription') ?: $this->textValue($product, 'getDescription');
-        $raw = strip_tags($raw);
-        $raw = (string) preg_replace('/\s+/u', ' ', $raw);
+        $text = \Angeo\RichData\Model\Text\PlainText::pick([
+            $this->textValue($product, 'short_description'),
+            $this->textValue($product, 'description'),
+            $this->textValue($product, 'meta_description'),
+        ], 50);
 
-        return mb_substr(trim($raw), 0, 5000);
+        return mb_substr($text, 0, 5000);
     }
 
     private function resolveImage(ProductInterface $product): ?string
@@ -348,7 +372,7 @@ class ProductBuilder extends AbstractBuilder
         try {
             $url = $this->imageHelper
                 ->init($product, 'product_page_image_large')
-                ->setImageFile($this->textValue($product, 'getImage'))
+                ->setImageFile($this->textValue($product, 'image'))
                 ->getUrl();
 
             return $url !== '' ? $url : null;
@@ -441,8 +465,9 @@ class ProductBuilder extends AbstractBuilder
             $review = $this->reviewFactory->create();
             $review->getEntitySummary($product, $storeId);
 
-            $summary = method_exists($product, 'getRatingSummary') ? $product->getRatingSummary() : null;
-            if ($summary === null) {
+            // getEntitySummary() stores the summary as data; the getter is magic (2.1.0).
+            $summary = $product instanceof DataObject ? $product->getData('rating_summary') : null;
+            if (!is_object($summary)) {
                 return null;
             }
 

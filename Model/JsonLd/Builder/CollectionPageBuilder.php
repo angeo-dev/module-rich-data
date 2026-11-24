@@ -39,10 +39,10 @@ class CollectionPageBuilder extends AbstractBuilder
     public function build(StoreInterface $store, array $context = []): ?array
     {
         $category = $context['category'] ?? null;
-        if (!$category || !method_exists($category, 'getId') || !$category->getId()) {
+        if (!is_object($category) || !method_exists($category, 'getId') || !$category->getId()) {
             return null;
         }
-
+        /** @var \Magento\Catalog\Model\Category $category */
         $products = $context['category_products'] ?? [];
         if (!is_array($products) || $products === []) {
             return null;

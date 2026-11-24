@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!-- 2.1.0: og:description with 50–160 characters. Off: Product schema → Better og:description. -->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceBlock name="opengraph.general">
+            <arguments>
+                <argument name="angeo_og_view_model" xsi:type="object">Angeo\RichData\ViewModel\OpenGraph</argument>
+            </arguments>
+            <action method="setTemplate" ifconfig="angeo_rich_data/product/og_description">
+                <argument name="template" xsi:type="string">Angeo_RichData::product/opengraph.phtml</argument>
+            </action>
+        </referenceBlock>
+    </body>
+</page>

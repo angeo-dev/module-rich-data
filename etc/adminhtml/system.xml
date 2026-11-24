@@ -134,6 +134,13 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     <comment>Kept from 1.x so existing settings still apply. Use the Breadcrumb schema group instead. Setting this to No switches breadcrumbs off everywhere.</comment>
                 </field>
+
+                <field id="og_description" type="select" translate="label comment" sortOrder="210"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Better og:description</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[Magento puts the raw short description in <code>og:description</code>. With this on it uses the meta description, short description or description — the first with 50+ characters — cut to 160 characters. Fixes the "Open Graph" warning in AEO Audit.]]></comment>
+                </field>
             </group>
 
             <group id="breadcrumb" translate="label comment" sortOrder="22"

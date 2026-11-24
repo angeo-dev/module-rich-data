@@ -14,8 +14,13 @@ use Magento\Catalog\Model\Product;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Review\Model\ReviewFactory;
 use Magento\Store\Api\Data\StoreInterface;
+use Magento\Store\Model\Store;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
+
+if (!class_exists(ReviewFactory::class)) {
+    require_once __DIR__ . '/../../../Stub/ReviewFactory.php';
+}
 
 class ProductBuilderTest extends TestCase
 {
@@ -46,7 +51,7 @@ class ProductBuilderTest extends TestCase
         $this->imageHelper     = $this->createMock(ImageHelper::class);
         $this->reviewFactory   = $this->createMock(ReviewFactory::class);
 
-        $this->store = $this->createMock(StoreInterface::class);
+        $this->store = $this->createMock(Store::class);
         $this->store->method('getId')->willReturn(1);
         $this->store->method('getName')->willReturn('Test Store');
         $this->store->method('getBaseUrl')->willReturn('https://shop.test/');
@@ -57,7 +62,10 @@ class ProductBuilderTest extends TestCase
         $this->product->method('getName')->willReturn('Alpine Jacket');
         $this->product->method('getSku')->willReturn('ALP-001');
         $this->product->method('getProductUrl')->willReturn(self::PAGE_URL);
-        $this->product->method('getShortDescription')->willReturn('<p>Warm  jacket</p>');
+        // EAV values come through getData(): getShortDescription() is magic.
+        $this->product->method('getData')->willReturnCallback(
+            static fn ($key = '', $index = null) => ['short_description' => '<p>Warm  jacket</p>'][$key] ?? null
+        );
         $this->product->method('getTypeId')->willReturn('simple');
 
         $this->imageHelper->method('init')->willReturnSelf();

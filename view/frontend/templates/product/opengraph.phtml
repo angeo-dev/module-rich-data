@@ -1,0 +1,33 @@
+<?php
+/**
+ * Magento_Catalog::product/view/opengraph/general.phtml with one change
+ * (angeo/module-rich-data 2.1.0): og:description comes from the OpenGraph
+ * view model — meta, short or full description, 50–160 characters —
+ * instead of the raw short description.
+ *
+ * @var \Magento\Catalog\Block\Product\View $block
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Angeo\RichData\ViewModel\OpenGraph $og
+ */
+$product = $block->getProduct();
+$og = $block->getData('angeo_og_view_model');
+$description = $og instanceof \Angeo\RichData\ViewModel\OpenGraph
+    ? $og->description($product)
+    : (string) $block->stripTags((string) $product->getShortDescription());
+?>
+
+<meta property="og:type" content="product" />
+<meta property="og:title"
+      content="<?= $escaper->escapeHtmlAttr($block->stripTags($product->getName())) ?>" />
+<meta property="og:image"
+      content="<?= $escaper->escapeUrl($block->getImage($product, 'product_base_image')->getImageUrl()) ?>" />
+<meta property="og:description"
+      content="<?= $escaper->escapeHtmlAttr($description) ?>" />
+<meta property="og:url" content="<?= $escaper->escapeUrl($product->getProductUrl()) ?>" />
+<?php if ($product->getCanShowPrice() !== false && $priceAmount = $product
+          ->getPriceInfo()
+          ->getPrice(\Magento\Catalog\Pricing\Price\FinalPrice::PRICE_CODE)
+          ->getAmount()):?>
+    <meta property="product:price:amount" content="<?= $escaper->escapeHtmlAttr($priceAmount) ?>"/>
+    <?= $block->getChildHtml('meta.currency') ?>
+<?php endif;?>
